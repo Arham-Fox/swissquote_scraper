@@ -3,6 +3,7 @@
 
 import time
 import pandas as pd
+from bs4 import BeautifulSoup
 import undetected_chromedriver as uc
 from datetime import datetime
 from selenium.webdriver.chrome.service import Service
@@ -139,86 +140,62 @@ def save_dataframe_to_xlsx(df, filename):
         
         print(f"DataFrame saved as '{file_path}' successfully.")    
     
+
 def read_table_with_header_to_dataframe(timeout=10):
-        # Looking for links in rows takes very long. Could be checked/improved.
-        dev = False
-        try:
-            if dev:
-                print("[i] Looking for Table...")
-            # Locate the table by its fixed class name
-            table = WebDriverWait(driver, timeout).until(
-                EC.presence_of_element_located((By.CLASS_NAME, "s-table.SecuritiesSearchPlugin-Table"))
-            )
-            if dev:
-                print("[i] Table found.")
-    
-            if dev:
-                print("[i] Extracting Headers...")
-            # Extract the header row
-            headers = table.find_element(By.TAG_NAME, "thead")
-            header_cells = headers.find_elements(By.TAG_NAME, "th")
-            header_texts = [cell.text for cell in header_cells]
-            if dev:
-                print("[i] Headers extracted.")
-    
-            if dev:
-                print("[i] Extracting rows...")
-            # Extract each row from the tbody
-            tbody = table.find_element(By.TAG_NAME, "tbody")
-            rows = tbody.find_elements(By.TAG_NAME, "tr")
-            table_data = []
-            if dev:
-                print("[i] Rows extracted.")
-                
-            if dev:
-                print("[i] Looking for links in rows...")
-            for count, row in enumerate(rows, start=1): # Very slow. #TODO
-                print(f"Processing row {count}") 
-                cells = row.find_elements(By.TAG_NAME, "td")
-                row_data = []
-    
-                # Initialize link variable
-                link = None
-                
-                for cell in cells:
-                    # Get the text from the cell
-                    row_data.append(cell.text)
-                    
-                    # Check if there is a hyperlink in the cell
-                    link_element = cell.find_element(By.TAG_NAME, "a") if cell.find_elements(By.TAG_NAME, "a") else None
-                    if link_element:
-                        link = link_element.get_attribute("href")  # Extract the hyperlink
-    
-                # Append the row data and link to the table_data
-                row_data.append(link)  # Add the link to the row data
-                table_data.append(row_data)
-    
-            if dev:
-                print("[i] Finished looking for rows.")
-                
-            if dev:
-                print("[i] Appending links to header_texts...")           
-            # Add the 'Link' column to the header texts
-            header_texts.append("Link")
+    """
+    Reads a table into a DataFrame, optimizing link extraction and using BeautifulSoup for parsing.
+    """
+    dev = False
+    try:
+        if dev:
+            print("[i] Looking for Table...")
+        
+        # Locate the table and extract its HTML content in one go
+        table = WebDriverWait(driver, timeout).until(
+            EC.presence_of_element_located((By.CLASS_NAME, "s-table.SecuritiesSearchPlugin-Table"))
+        )
+        
+        # Parse the table's HTML with BeautifulSoup
+        soup = BeautifulSoup(table.get_attribute('outerHTML'), 'html.parser')
+        
+        # Extract headers
+        headers = [th.get_text(strip=True) for th in soup.select("thead th")]
+        
+        # Initialize table data and links storage
+        table_data = []
+        links = {}
+        
+        # Extract rows and process each row
+        rows = soup.select("tbody tr")
+        for row_idx, row in enumerate(rows):
+            cells = row.find_all("td")
+            row_data = [cell.get_text(strip=True) for cell in cells]
             
-            if dev:
-                print("[i] Done appending links to header_texts.")    
-    
-            if dev:
-                print("[i] Creating DataFrame...")   
-                
-            # Create a DataFrame using the extracted data
-            df = pd.DataFrame(table_data, columns=header_texts)
-            if dev:
-                print("[i] DataFrame created.")          
-                
-            return df
-    
-        except Exception as e:
-            print(f"Failed to read table with header into DataFrame: {e}")
-            return None
-    
-    
+            # Extract links if any and store them by row index
+            link_element = row.find("a", href=True)
+            links[row_idx] = link_element['href'] if link_element else None
+            
+            # Append the row data to table_data
+            table_data.append(row_data)
+        
+        # Append the 'Link' column to headers
+        headers.append("Link")
+        
+        # Add link data to table_data
+        for row_idx, row_data in enumerate(table_data):
+            row_data.append(links[row_idx])  # Append link to the end of the row data
+        
+        # Create the DataFrame
+        df = pd.DataFrame(table_data, columns=headers)
+        if dev:
+            print("[i] DataFrame created.")
+        
+        return df
+
+    except Exception as e:
+        print(f"Failed to read table with header into DataFrame: {e}")
+        return None
+
 
 def read_fundamentals_to_series(timeout=10):
         """
@@ -345,8 +322,8 @@ if __name__ == '__main__':
                         # Append the transposed DataFrame to the list
                         fundamentals_dataframes.append(transposed_df)
                         
-                        if count == 3:
-                            break                        
+                        # if count == 3:
+                        #     break                        
                     else:
                         print(f"Failed to fetch fundamentals data for the link: {link}")
         

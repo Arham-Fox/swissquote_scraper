@@ -44,8 +44,8 @@ The script:
    git clone https://github.com/Arham-Fox/swissquote_scraper.git
    ```
 2. Install the required packages:
-```bash
-   pip install pandas selenium undetected-chromedriver xlsxwriter
+   ```bash
+   pip install bs4 pandas selenium undetected-chromedriver xlsxwriter
    ```
 3. Download Chromedriver and place it in /usr/bin/chromedriver.
 
