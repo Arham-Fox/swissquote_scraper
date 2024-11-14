@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import time
+import re
 import pandas as pd
 from bs4 import BeautifulSoup
 import undetected_chromedriver as uc
@@ -53,6 +54,38 @@ driver = uc.Chrome(version_main=130, service=Service(chromedriver_path), options
 # driver = uc.Chrome(service=Service(chromedriver_path), options=chrome_options)
 driver.maximize_window()
 
+def get_button_caption_by_class(button_class, timeout=10):
+        # Wait for the element to be visible
+        btn = WebDriverWait(driver, timeout).until(
+            EC.visibility_of_element_located((By.CSS_SELECTOR, f".{button_class.replace(' ','.')}"))
+        )
+        
+        # Get the text from the button
+        btn_text = btn.text
+        
+        # Use regex to extract the first number from the button's text
+        match = re.search(r'\d+', btn_text)
+        
+        if match:
+            btn_number = int(match.group())  # Convert the matched digits to an integer
+        else:
+            btn_number = 0  # Fallback
+        
+        return btn_number
+
+
+def get_size_of_table_by_class(table_class="s-table SecuritiesSearchPlugin-Table", timeout=10):
+    # Wait for the table to be visible
+    table = WebDriverWait(driver, timeout).until(
+        EC.visibility_of_element_located((By.CLASS_NAME, f"{table_class.replace(' ', '.')}"))
+    )
+    
+    # Find all rows in the table (including the header row)
+    rows = table.find_elements(By.TAG_NAME, "tr")
+    
+    # If there is a header row, subtract it from the count
+    # Assuming the header row is the first row, you can exclude it:
+    return len(rows) - 1  # Subtract 1 to exclude the header row
 
 def click_button_by_class_name(button_class, timeout=10):
         btn = WebDriverWait(driver, timeout).until(
@@ -88,7 +121,7 @@ def click_button_by_xpath(xpath, timeout=10):
             
         except Exception as e:
             print(f"Failed to click element with XPath '{xpath}': {e}")  
-        
+      
 
 def select_radio_button_by_xpath(xpath, timeout=10):
         try:
@@ -283,10 +316,16 @@ if __name__ == '__main__':
         print('Click "Hinzufügen"')
         click_button_by_xpath("/html/body/div[6]/div/div/div/div[3]/div/div[2]/button", 10)
         
-        print("Scroll down to load full table")
-        press_page_down_n_times(17, wait_time=2)
-        # idea. Number of shares is known. grab it. scroll down until table has n elements.
-
+        number_of_results = get_button_caption_by_class('Badge Badge--pill SecuritiesSearchPlugin-ScannerResults__counterBadge Badge--archived', 10)
+        print(f"Found {number_of_results} results")
+        
+        print("Scroll down to load full table")        
+        size_securities_table = get_size_of_table_by_class()
+      
+        while size_securities_table != number_of_results:
+            print(f"Loaded {size_securities_table}/{number_of_results} results")
+            press_page_down_n_times(1, wait_time=2)
+            size_securities_table = get_size_of_table_by_class()
         
         print("Read table of securities")
         df = read_table_with_header_to_dataframe(10)
@@ -382,25 +421,3 @@ seconds = int((execution_time % 3600) % 60)
 print("-"*80)
 print(f"----- Duration: {hours} Hrs, {minutes} Mins, {seconds} Secs.")
 print("-"*80)
-
-
-print(sorted_df['Dividendenrendite'])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
