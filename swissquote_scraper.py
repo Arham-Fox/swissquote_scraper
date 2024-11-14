@@ -335,9 +335,18 @@ if __name__ == '__main__':
                 # Merge combined_fundamentals_df with the original df using the Link column
                 final_combined_df = pd.merge(df, combined_fundamentals_df, on='Link', how='left')
         
-                # Print the final combined DataFrame for verification
-                # print(final_combined_df)
+                # Remove the '%' character from column Dividendenrendite for sorting
+                final_combined_df['Dividendenrendite'] = final_combined_df['Dividendenrendite'].str.replace('%', '', regex=False)
+                
+                # Convert to numeric for sorting
+                final_combined_df['Dividendenrendite'] = pd.to_numeric(final_combined_df['Dividendenrendite'])
+                    
+                # Sort by column Dividendenrendite, descending
                 sorted_df = final_combined_df.sort_values(by=['Dividendenrendite'], ascending=False)
+                
+                # Add the '%' character back after sorting
+                sorted_df['Dividendenrendite'] = sorted_df['Dividendenrendite'].astype(str) + '%'
+                
                 del sorted_df[''] # first col, no header, content is always "Trade"
                 del sorted_df['Marktkapitalisierung']
                 del sorted_df['Bereich']
@@ -373,3 +382,25 @@ seconds = int((execution_time % 3600) % 60)
 print("-"*80)
 print(f"----- Duration: {hours} Hrs, {minutes} Mins, {seconds} Secs.")
 print("-"*80)
+
+
+print(sorted_df['Dividendenrendite'])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
