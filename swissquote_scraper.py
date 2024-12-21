@@ -305,19 +305,26 @@ if __name__ == '__main__':
         
         print("Set language to German")
         click_button_by_class_name("Button Button--ghost Languages__triggerButton globalNavigation-Button globalNavigation-Button--ghost globalNavigation-Languages__triggerButton", 10)
-        click_button_by_xpath("/html/body/div[6]/div/div/ul/li[3]", 10)
+        click_button_by_xpath("/html/body/div[7]/div/div/ul/li[3]", 10)
         
         print("Add a new scanner")
         click_button_by_class_name("Button Button--outlined Button--small SecuritiesSearchPlugin-ScannerContainer__addScannerButton", 10)
 
         print('Select "Höchste Kapitalisierung der Schweiz"')
-        select_radio_button_by_xpath("/html/body/div[6]/div/div/div/div[2]/div[2]/div[2]/div/div/div[2]/label", 10)
+        select_radio_button_by_xpath("/html/body/div[7]/div/div/div/div[2]/div[2]/div[2]/div/div/div[2]/label", 10)
 
         print('Click "Hinzufügen"')
-        click_button_by_xpath("/html/body/div[6]/div/div/div/div[3]/div/div[2]/button", 10)
+        click_button_by_xpath("/html/body/div[7]/div/div/div/div[3]/div/div[2]/button", 10)
         
         number_of_results = get_button_caption_by_class('Badge Badge--pill SecuritiesSearchPlugin-ScannerResults__counterBadge Badge--archived', 10)
         print(f"Found {number_of_results} results")
+
+        # Wait and retry if 0 results
+        while number_of_results == 0:
+            time.sleep(3)
+            number_of_results = get_button_caption_by_class('Badge Badge--pill SecuritiesSearchPlugin-ScannerResults__counterBadge Badge--archived', 10)
+            print(f"Found {number_of_results} results")
+
         
         print("Scroll down to load full table")        
         size_securities_table = get_size_of_table_by_class()
@@ -375,10 +382,10 @@ if __name__ == '__main__':
                 final_combined_df = pd.merge(df, combined_fundamentals_df, on='Link', how='left')
         
                 # Remove the '%' character from column Dividendenrendite for sorting
-                final_combined_df['Dividendenrendite'] = final_combined_df['Dividendenrendite'].str.replace('%', '', regex=False)
-                
+                final_combined_df['Dividendenrendite'] = final_combined_df['Dividendenrendite'].fillna('').astype(str).str.replace('%', '', regex=False)
+
                 # Convert to numeric for sorting
-                final_combined_df['Dividendenrendite'] = pd.to_numeric(final_combined_df['Dividendenrendite'])
+                final_combined_df['Dividendenrendite'] = pd.to_numeric(final_combined_df['Dividendenrendite'], errors='coerce')
                     
                 # Sort by column Dividendenrendite, descending
                 sorted_df = final_combined_df.sort_values(by=['Dividendenrendite'], ascending=False)
