@@ -47,7 +47,7 @@ chrome_options.add_argument("--disable-sync")
 # Disable shared memory
 chrome_options.add_argument("--disable-dev-shm-usage")
 # Could reduce the change of detection
-# chrome_options.add_argument("--headless")
+chrome_options.add_argument("--headless")
 
 # Create a ChromeDriver instance
 driver = uc.Chrome(version_main=130, service=Service(chromedriver_path), options=chrome_options)
