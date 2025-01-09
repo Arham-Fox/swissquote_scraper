@@ -47,7 +47,7 @@ chrome_options.add_argument("--disable-sync")
 # Disable shared memory
 chrome_options.add_argument("--disable-dev-shm-usage")
 # Could reduce the change of detection
-chrome_options.add_argument("--headless")
+# chrome_options.add_argument("--headless")
 
 # Create a ChromeDriver instance
 driver = uc.Chrome(version_main=130, service=Service(chromedriver_path), options=chrome_options)
@@ -304,17 +304,19 @@ if __name__ == '__main__':
         time.sleep(3)
         
         print("Set language to German")
-        click_button_by_class_name("Button Button--ghost Languages__triggerButton globalNavigation-Button globalNavigation-Button--ghost globalNavigation-Languages__triggerButton", 10)
-        click_button_by_xpath("/html/body/div[7]/div/div/ul/li[3]", 10)
-        
+        driver.add_cookie({"name": "swissquote_lang", "value": "de"})
+        driver.refresh()
+        time.sleep(3)
+                             
         print("Add a new scanner")
         click_button_by_class_name("Button Button--outlined Button--small SecuritiesSearchPlugin-ScannerContainer__addScannerButton", 10)
 
         print('Select "Höchste Kapitalisierung der Schweiz"')
-        select_radio_button_by_xpath("/html/body/div[7]/div/div/div/div[2]/div[2]/div[2]/div/div/div[2]/label", 10)
+        select_radio_button_by_xpath("/html/body/div[6]/div/div/div/div[2]/div[2]/div[2]/div/div/div[2]/label", 10)
 
         print('Click "Hinzufügen"')
-        click_button_by_xpath("/html/body/div[7]/div/div/div/div[3]/div/div[2]/button", 10)
+        click_button_by_xpath("/html/body/div[6]/div/div/div/div[3]/div/div[2]/button", 10)
+        
         
         number_of_results = get_button_caption_by_class('Badge Badge--pill SecuritiesSearchPlugin-ScannerResults__counterBadge Badge--archived', 10)
         print(f"Found {number_of_results} results")
